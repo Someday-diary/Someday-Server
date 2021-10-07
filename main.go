@@ -1,7 +1,8 @@
 package main
 
 import (
-	"github.com/Someday-diary/Someday-Server/Controller"
+	"github.com/Someday-diary/Someday-Server/controller"
+	"github.com/Someday-diary/Someday-Server/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -10,18 +11,18 @@ func main() {
 
 	user := r.Group("/user")
 	{
-		user.POST("/sign-in", Controller.SignIn)
-		user.GET("/login", Controller.Login)
+		user.POST("/signup", controller.SignUp)
+		user.GET("/login", controller.Login)
 	}
 
-	diary := r.Group("/diary")
+	diary := r.Group("/diary").Use(middleware.Auth)
 	{
-		diary.POST("", Controller.CreatePost)
-		diary.GET("", Controller.GetAllPost)
-		diary.GET("/:post_id", Controller.GetPostByID)
-		diary.GET("/search", Controller.GetPostByTag)
-		diary.PATCH("/:post_id", Controller.EditPost)
-		diary.DELETE("/:post_id", Controller.DeletePost)
+		diary.POST("", controller.CreatePost)
+		diary.GET("", controller.GetAllPost)
+		diary.GET("/:post_id", controller.GetPostByID)
+		diary.GET("/search", controller.GetPostByTag)
+		diary.PATCH("/:post_id", controller.EditPost)
+		diary.DELETE("/:post_id", controller.DeletePost)
 	}
 
 	_ = r.Run()
