@@ -1,8 +1,8 @@
-package Controller
+package controller
 
 import "github.com/gin-gonic/gin"
 
-func SignIn(c *gin.Context) {
+func SignUp(c *gin.Context) {
 	c.JSON(200, "call SI")
 }
 
