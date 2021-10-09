@@ -13,6 +13,7 @@ func main() {
 	{
 		user.POST("/signup", controller.SignUp)
 		user.GET("/login", controller.Login)
+		user.Any("/email", controller.EmailVerification)
 	}
 
 	diary := r.Group("/diary").Use(middleware.Auth)
