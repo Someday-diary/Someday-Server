@@ -11,16 +11,17 @@ func main() {
 
 	user := r.Group("/user")
 	{
-		user.POST("/signup", controller.SignUp)
-		user.GET("/login", controller.Login)
+		user.POST("", controller.SignUp)
+		user.GET("", controller.Login)
+		user.POST("/verify", controller.SendVerityEmail)
+		user.GET("/verify", controller.Verity)
 	}
 
-	diary := r.Group("/diary").Use(middleware.Auth)
+	diary := r.Group("/diaries").Use(middleware.Auth)
 	{
 		diary.POST("", controller.CreatePost)
-		diary.GET("", controller.GetAllPost)
+		diary.GET("", controller.GetPost)
 		diary.GET("/:post_id", controller.GetPostByID)
-		diary.GET("/search", controller.GetPostByTag)
 		diary.PATCH("/:post_id", controller.EditPost)
 		diary.DELETE("/:post_id", controller.DeletePost)
 	}
