@@ -74,8 +74,7 @@ func GetPostByID(c *gin.Context) {
 
 }
 
-func GetAllPost(c *gin.Context) {
-	c.JSON(200, "call GAP")
+func GetPost(c *gin.Context) {
 
 }
 
