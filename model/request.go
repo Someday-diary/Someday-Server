@@ -5,14 +5,17 @@ import "encoding/json"
 type SignRequest struct {
 	Email string `json:"email"`
 	Pwd   string `json:"pwd"`
+	Agree string `json:"agree"`
 }
 
 type CreatePostRequest struct {
-	Tags []struct {
-		TagName string `json:"tag_name"`
-	} `json:"tags"`
-	Contents string `json:"contents"`
-	Data     string `json:"data"`
+	Diaries []struct {
+		Tags []struct {
+			TagName string `json:"tag_name" db:"tag_name"`
+		} `json:"tags"`
+		Contents string `json:"contents" db:"contents"`
+		Date     string `json:"data" db:"created_at"`
+	}
 }
 
 type EditPostRequest struct {
@@ -20,6 +23,10 @@ type EditPostRequest struct {
 		TagName string `json:"tag_name"`
 	} `json:"tags"`
 	Contents string `json:"contents"`
+}
+
+type EmailVerityRequest struct {
+	Email string `json:"email"`
 }
 
 func UnmarshalSignRequest(data []byte) (SignRequest, error) {
@@ -30,6 +37,12 @@ func UnmarshalSignRequest(data []byte) (SignRequest, error) {
 
 func UnmarshalCreatePostRequest(data []byte) (CreatePostRequest, error) {
 	var r CreatePostRequest
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func UnmarshalEmailVerityRequest(data []byte) (EmailVerityRequest, error) {
+	var r EmailVerityRequest
 	err := json.Unmarshal(data, &r)
 	return r, err
 }
