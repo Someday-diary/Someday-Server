@@ -12,9 +12,9 @@ func main() {
 	user := r.Group("/user")
 	{
 		user.POST("", controller.SignUp)
-		user.GET("", controller.Login)
+		user.POST("/login", controller.Login)
 		user.POST("/verify", controller.SendVerityEmail)
-		user.GET("/verify", controller.Verity)
+		user.POST("/verify/confirm", controller.Verity)
 	}
 
 	diary := r.Group("/diaries").Use(middleware.Auth)

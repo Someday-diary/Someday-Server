@@ -186,5 +186,65 @@ func SendVerityEmail(c *gin.Context) {
 }
 
 func Verity(c *gin.Context) {
+	body, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	req, err := model.UnmarshalEmailVerityConfirmRequest(body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	d, err := model.ConnectMYSQL()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	r, err := model.ConnectRedis(1)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	code, err := r.Get(context.Background(), req.Email).Result()
+	if err != nil {
+		code = ""
+	}
+
+	if code != req.Code {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": "코드 안맞아 ~",
+		})
+		return
+	}
+
+	_, err = d.Exec("update user set verify = 'Y' where email = ?", req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	_, err = r.Del(context.Background(), req.Email).Result()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		_, _ = d.Exec("update user set verify = 'N' where email = ?", req.Email)
+		return
+	}
 
 }
