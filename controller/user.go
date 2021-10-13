@@ -102,7 +102,70 @@ func SignUp(c *gin.Context) {
 }
 
 func Login(c *gin.Context) {
+	body, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+	req, err := model.UnmarshalLoginRequest(body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+	db, err := model.ConnectMYSQL()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+	defer db.Close()
 
+	r, err := model.ConnectRedis(0)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+	var user model.UserData
+	err = db.Get(&user, "select * from user where email = ?", req.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "일치하는 유저가 없습니다.",
+		})
+		return
+	}
+	if user.Verify != "N" {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": "이메일 인증을 하지 않았습니다.",
+		})
+		return
+	}
+
+	result := bcrypt.CompareHashAndPassword([]byte(user.Pwd.String), []byte(req.Pwd))
+	if result != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"msg": "비밀번호가 일치하지 않습니다.",
+		})
+		return
+	}
+
+	token, err := r.Get(context.Background(), req.Email).Result()
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"msg": "이미 다른 기기에서 사용중인 계정입니다",
+		})
+	}
+	r.Del(context.Background(), req.Pwd)
+
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
 }
 
 func SendVerityEmail(c *gin.Context) {
