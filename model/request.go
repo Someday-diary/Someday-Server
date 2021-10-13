@@ -29,6 +29,11 @@ type EmailVerityRequest struct {
 	Email string `json:"email"`
 }
 
+type EmailVerityConfirmRequest struct {
+	Email string `json:"email"`
+	Code  string `json:"code"`
+}
+
 func UnmarshalSignRequest(data []byte) (SignRequest, error) {
 	var r SignRequest
 	err := json.Unmarshal(data, &r)
@@ -43,6 +48,12 @@ func UnmarshalCreatePostRequest(data []byte) (CreatePostRequest, error) {
 
 func UnmarshalEmailVerityRequest(data []byte) (EmailVerityRequest, error) {
 	var r EmailVerityRequest
+	err := json.Unmarshal(data, &r)
+	return r, err
+}
+
+func UnmarshalEmailVerityConfirmRequest(data []byte) (EmailVerityConfirmRequest, error) {
+	var r EmailVerityConfirmRequest
 	err := json.Unmarshal(data, &r)
 	return r, err
 }
