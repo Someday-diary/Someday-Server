@@ -2,7 +2,7 @@ package model
 
 import (
 	"context"
-	_ "database/sql"
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
@@ -34,4 +34,11 @@ func ConnectRedis(dbCode int) (*redis.Client, error) {
 
 	_, err := client.Ping(context.Background()).Result()
 	return client, err
+}
+
+type UserData struct {
+	Email  string         `db:"email"`
+	Pwd    sql.NullString `db:"pwd"`
+	Agree  string         `db:"agree"`
+	Verify string         `db:"verify"`
 }

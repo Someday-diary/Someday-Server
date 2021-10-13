@@ -8,6 +8,11 @@ type SignRequest struct {
 	Agree string `json:"agree"`
 }
 
+type LoginRequest struct {
+	Email string `json:"email"`
+	Pwd   string `json:"pwd"`
+}
+
 type CreatePostRequest struct {
 	Diaries []struct {
 		Tags []struct {
@@ -32,6 +37,12 @@ type EmailVerityRequest struct {
 type EmailVerityConfirmRequest struct {
 	Email string `json:"email"`
 	Code  string `json:"code"`
+}
+
+func UnmarshalLoginRequest(data []byte) (LoginRequest, error) {
+	var r LoginRequest
+	err := json.Unmarshal(data, &r)
+	return r, err
 }
 
 func UnmarshalSignRequest(data []byte) (SignRequest, error) {
