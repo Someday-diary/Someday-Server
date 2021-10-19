@@ -7,38 +7,65 @@ import (
 	"log"
 	"os"
 
-	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/jmoiron/sqlx"
-	"github.com/joho/godotenv"
+
+	"github.com/go-redis/redis/v8"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
 )
 
-func init() {
-	err := godotenv.Load(".env")
+var (
+	DB               *gorm.DB
+	AccessTokenRedis *redis.Client
+	EmailVerifyRedis *redis.Client
+)
+
+func Connect() {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True",
+		os.Getenv("mysql_username"),
+		os.Getenv("mysql_pwd"),
+		os.Getenv("mysql_address"),
+		os.Getenv("mysql_port"),
+		os.Getenv("mysql_db_name"))
+
+	sqlDB, err := sql.Open("mysql", dsn)
+	db, err := gorm.Open(mysql.New(mysql.Config{Conn: sqlDB}), &gorm.Config{})
+
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
-}
 
-func ConnectMYSQL() (*sqlx.DB, error) {
-	return sqlx.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:3306)/someday", os.Getenv("mysql_username"),
-		os.Getenv("mysql_pwd"), os.Getenv("mysql_address")))
-}
+	_ = db.AutoMigrate(
+		&User{},
+		&Secret{},
+		&Post{},
+		&Tag{},
+	)
+	DB = db
 
-func ConnectRedis(dbCode int) (*redis.Client, error) {
-	client := redis.NewClient(&redis.Options{
+	AccessTokenRedis = redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis_address"),
 		Password: os.Getenv("redis_pwd"), // no password set
-		DB:       dbCode,                 // use default DB
+		DB:       0,                      // use default DB
 	})
 
-	_, err := client.Ping(context.Background()).Result()
-	return client, err
-}
+	EmailVerifyRedis = redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("redis_address"),
+		Password: os.Getenv("redis_pwd"), // no password set
+		DB:       1,                      // use default DB
+	})
 
-type UserData struct {
-	Email  string         `db:"email"`
-	Pwd    sql.NullString `db:"pwd"`
-	Agree  string         `db:"agree"`
-	Verify string         `db:"verify"`
+	ctx := context.Background()
+
+	_, err = AccessTokenRedis.Ping(ctx).Result()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	_, err = EmailVerifyRedis.Ping(ctx).Result()
+	if err != nil {
+		log.Panic(err)
+	}
+
+	log.Print("[DATABASE] 연결 완료")
 }
