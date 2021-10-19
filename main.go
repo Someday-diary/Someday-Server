@@ -10,21 +10,21 @@ func main() {
 	r := gin.Default()
 	r.Use(middleware.ErrorHandle())
 
-	user := r.Group("/user")
+	userAPI := r.Group("/user")
 	{
-		user.POST("", controller.SignUp)
-		user.POST("/login", controller.Login)
-		user.POST("/verify", controller.SendVerityEmail)
-		user.POST("/verify/confirm", controller.Verity)
+		userAPI.POST("", user.SignUp())
+		userAPI.POST("/login", user.Login())
+		userAPI.POST("/verify", user.SendEmail())
+		userAPI.POST("/verify/confirm", user.EmailConfirm())
 	}
 
-	diary := r.Group("/diaries").Use(middleware.Auth)
+	postAPI := r.Group("/diary").Use(middleware.Auth())
 	{
-		diary.POST("", controller.CreatePost)
-		diary.GET("", controller.GetPost)
-		diary.GET("/:post_id", controller.GetPostByID)
-		diary.PATCH("/:post_id", controller.EditPost)
-		diary.DELETE("/:post_id", controller.DeletePost)
+		postAPI.POST("", post.CreatePost())
+		postAPI.GET("", post.GetPost())
+		postAPI.GET("/:post_id", post.GetPostByID())
+		postAPI.PATCH("/:post_id", post.EditPost())
+		postAPI.DELETE("/:post_id", post.DeletePost())
 	}
 
 	_ = r.Run()
