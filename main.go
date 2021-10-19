@@ -8,6 +8,7 @@ import (
 
 func main() {
 	r := gin.Default()
+	r.Use(middleware.ErrorHandle())
 
 	user := r.Group("/user")
 	{
