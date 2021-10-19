@@ -1,26 +1,12 @@
-package model
+package lib
 
 import (
 	"bytes"
-	"encoding/json"
 	"html/template"
 	"os"
 
 	"gopkg.in/gomail.v2"
 )
-
-type LoginResponse struct {
-	Message string `json:"message"`
-	Token   []struct {
-		AccessToken  string `json:"access_token"`
-		RefreshToken string `json:"refresh_token"`
-	}
-	PublicKey string `json:"public_key"`
-}
-
-func (r *LoginResponse) Marshal() ([]byte, error) {
-	return json.Marshal(r)
-}
 
 type EmailRequest struct {
 	from    string
