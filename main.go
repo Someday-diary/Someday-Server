@@ -1,12 +1,26 @@
 package main
 
 import (
-	"github.com/Someday-diary/Someday-Server/controller"
+	"log"
+
+	"github.com/Someday-diary/Someday-Server/controller/post"
+	"github.com/Someday-diary/Someday-Server/controller/user"
+	"github.com/Someday-diary/Someday-Server/lib"
 	"github.com/Someday-diary/Someday-Server/middleware"
+	"github.com/Someday-diary/Someday-Server/model"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	model.Connect()
+	lib.CreateCipher()
+
 	r := gin.Default()
 	r.Use(middleware.ErrorHandle())
 
