@@ -55,8 +55,8 @@ func Login() gin.HandlerFunc {
 		token := lib.CreateToken(8)
 
 		var k model.Secret
-		model.DB.Select("secret_key").Where("email = ?", req.Email).First(&k)
-		secretKey, err := lib.Cipher.Decrypt(k.SecretKey)
+		model.DB.Select("secret_key").Where("email = ?", req.Email).Limit(1).Find(&k)
+		secretKey, err := lib.SystemCipher.Decrypt(k.SecretKey)
 		if err != nil {
 			_ = c.Error(err)
 			return

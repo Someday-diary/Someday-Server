@@ -59,7 +59,7 @@ func SignUp() gin.HandlerFunc {
 
 		key := lib.CreateToken(32)
 
-		t, err := lib.Cipher.Encrypt(key)
+		t, err := lib.SystemCipher.Encrypt(key)
 		if err != nil {
 			log.Panic(err)
 		}

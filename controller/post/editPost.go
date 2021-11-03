@@ -27,20 +27,32 @@ func EditPost() gin.HandlerFunc {
 			return
 		}
 
-		for _, diary := range req.Diaries {
-			var post model.Post
-			model.DB.Model(&post).Where("id = ?", diary.Id).Updates(&model.Post{
-				Contents: diary.Contents,
-			})
+		key := c.GetHeader("secret_key")
 
-			model.DB.Where("post_id = ?", diary.Id).Delete(&model.Tag{})
-			for _, tag := range diary.Tags {
-				t := model.Tag{
-					PostID:  diary.Id,
-					TagName: tag.TagName,
-				}
-				model.DB.Create(&t)
+		aes := lib.CreateCipher(key)
+
+		var post model.Post
+		e, err := aes.Encrypt(req.Contents)
+		if err != nil {
+			panic(err)
+		}
+
+		model.DB.Model(&post).Where("id = ?", req.ID).Updates(&model.Post{
+			Contents: e,
+		})
+
+		model.DB.Where("post_id = ?", req.ID).Delete(&model.Tag{})
+		for _, tag := range req.Tags {
+			e, err := aes.Encrypt(tag.TagName)
+			if err != nil {
+				panic(err)
 			}
+
+			t := model.Tag{
+				PostID:  req.ID,
+				TagName: e,
+			}
+			model.DB.Create(&t)
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"code": 200,
