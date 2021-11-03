@@ -29,7 +29,8 @@ func SignUp() gin.HandlerFunc {
 		}
 
 		var user model.User
-		result := model.DB.Where("email = ?", req.Email).First(&user)
+		var n int64
+		result := model.DB.Where("email = ?", req.Email).First(&user).Count(&n)
 		if result.Error != nil || user.Status == "not authenticated" {
 			c.JSON(http.StatusForbidden, gin.H{
 				"code": 104,
