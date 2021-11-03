@@ -8,7 +8,6 @@ import (
 	"github.com/Someday-diary/Someday-Server/lib"
 	"github.com/Someday-diary/Someday-Server/model"
 	"github.com/gin-gonic/gin"
-	"github.com/gofrs/uuid"
 )
 
 type CreatePostRequest struct {
@@ -31,8 +30,8 @@ func CreatePost() gin.HandlerFunc {
 			return
 		}
 
-		email := c.Request.Header.Get("email")
-		fmt.Println(email)
+		email := c.GetHeader("email")
+		key := c.GetHeader("secret_key")
 
 		aes := lib.CreateCipher(key)
 
