@@ -65,10 +65,8 @@ func SendEmail() gin.HandlerFunc {
 
 		code, err := lib.CreateCode()
 		if err != nil {
-			_ = c.Error(err)
-			return
+			panic(err)
 		}
-
 		model.EmailVerifyRedis.Set(context.Background(), req.Email, code, time.Minute*30)
 
 		templateData := map[string]string{
@@ -83,8 +81,7 @@ func SendEmail() gin.HandlerFunc {
 
 		err = r.SendEmail()
 		if err != nil {
-			_ = c.Error(err)
-			return
+			panic(err)
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"code": 200,
