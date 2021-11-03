@@ -57,7 +57,7 @@ func SignUp() gin.HandlerFunc {
 				Valid:  true,
 			}, Agree: req.Agree, Status: "normal"})
 
-		key := lib.CreateToken(16)
+		key := lib.CreateToken(32)
 
 		t, err := lib.Cipher.Encrypt(key)
 		if err != nil {
