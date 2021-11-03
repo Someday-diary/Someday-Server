@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/Someday-diary/Someday-Server/controller/post"
 	"github.com/Someday-diary/Someday-Server/controller/user"
