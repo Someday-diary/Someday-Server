@@ -20,16 +20,16 @@ type NiceCrypto struct {
 	CipherIvKey string
 }
 
-var Cipher Crypto
+var SystemCipher Crypto
 
-func CreateCipher() {
+func CreateCipher(secretKey string) Crypto {
 	var err error
-	Cipher, err = NewNiceCrypto(os.Getenv("secret_key"), os.Getenv("cipher_iv_key"))
+	Cipher, err := NewNiceCrypto(secretKey, os.Getenv("cipher_iv_key"))
 	if err != nil {
 		log.Panic(err)
 	}
 
-	log.Println("[AES] 암호화 블럭 생성완료")
+	return Cipher
 }
 
 func (c NiceCrypto) Encrypt(plainText string) (string, error) {
