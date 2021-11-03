@@ -8,14 +8,12 @@ import (
 )
 
 type EditPostRequest struct {
-	Diaries []struct {
-		Id   string `json:"id"`
-		Tags []struct {
-			TagName string `json:"tag"`
-		} `json:"tags"`
-		Contents string `json:"contents"`
-		Date     string `json:"date"`
-	} `json:"diaries"`
+	ID       string `json:"id"`
+	Contents string `json:"contents"`
+	Date     string `json:"date"`
+	Tags     []struct {
+		TagName string `json:"tag"`
+	} `json:"tags"`
 }
 
 func EditPost() gin.HandlerFunc {

@@ -12,13 +12,12 @@ import (
 )
 
 type CreatePostRequest struct {
-	Diaries []struct {
-		Tags []struct {
-			TagName string `json:"tag"`
-		} `json:"tags"`
-		Contents string `json:"contents"`
-		Date     string `json:"date"`
-	} `json:"diaries"`
+	Tags []struct {
+		TagName string `json:"tag"`
+	} `json:"tags"`
+	Contents string `json:"contents"`
+	Date     string `json:"date"`
+	ID       string `json:"id"`
 }
 
 func CreatePost() gin.HandlerFunc {

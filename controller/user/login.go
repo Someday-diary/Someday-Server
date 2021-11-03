@@ -11,8 +11,8 @@ import (
 )
 
 type LoginRequest struct {
-	Email string `json:"email"`
-	Pwd   string `json:"pwd"`
+	Email string `json:"email" binding:"required"`
+	Pwd   string `json:"pwd" binding:"required"`
 }
 
 func Login() gin.HandlerFunc {
