@@ -17,7 +17,7 @@ func Auth() gin.HandlerFunc {
 		email, err := model.AccessTokenRedis.Get(context.Background(), t).Result()
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"msg": "세션이 만료되었습니다, 다시 로그인해주십쇼.",
+				"code": 401,
 			})
 			c.Abort()
 			return
@@ -30,7 +30,7 @@ func Auth() gin.HandlerFunc {
 
 		ci, err := lib.NewNiceCrypto(os.Getenv("secret_key"), os.Getenv("cipher_iv_key"))
 		if err != nil {
-			_ = c.Error(err)
+			c.AbortWithStatus(500)
 		}
 		k, err := ci.Decrypt(secret.SecretKey)
 		if err != nil {
