@@ -15,14 +15,14 @@ import (
 func main() {
 	err := godotenv.Load(".env")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("critical error! : %s", err.Error())
+
 	}
 
 	model.Connect()
-	lib.CreateCipher()
+	lib.SystemCipher = lib.CreateCipher(os.Getenv("secret_key"))
 
 	r := gin.Default()
-	r.Use(middleware.ErrorHandle())
 
 	userAPI := r.Group("/user")
 	{
@@ -41,5 +41,8 @@ func main() {
 		postAPI.DELETE("/:post_id", post.DeletePost())
 	}
 
-	_ = r.Run()
+	err = r.Run(":8080")
+	if err != nil {
+		log.Fatalf("critical error! : %s", err.Error())
+	}
 }
