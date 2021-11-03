@@ -1,8 +1,8 @@
 package model
 
 type Tag struct {
-	PostID  string
-	TagName string
+	PostID  string `json:"post_id"`
+	TagName string `json:"tag_name"`
 }
 
 func (Tag) TableName() string {
