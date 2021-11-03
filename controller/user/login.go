@@ -21,31 +21,33 @@ func Login() gin.HandlerFunc {
 		err := c.Bind(req)
 
 		if err != nil {
-			c.JSON(http.StatusNotAcceptable, gin.H{
-				"msg": err.Error(),
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 400,
 			})
 			return
 		}
 
 		var user model.User
-		result := model.DB.Where("email = ?", req.Email).First(&user)
-		if result.Error != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"msg": "일치하는 유저가 없습니다.",
+		var count int64
+		model.DB.Find(&user, "email = ?", req.Email).Count(&count)
+
+		if count == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 106,
 			})
 			return
 		}
 		if user.Status == "not authenticated" {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"msg": "이메일 인증을 하지 않았습니다.",
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 107,
 			})
 			return
 		}
 
 		compare := bcrypt.CompareHashAndPassword([]byte(user.Pwd.String), []byte(req.Pwd))
 		if compare != nil {
-			c.JSON(http.StatusOK, gin.H{
-				"msg": "비밀번호가 일치하지 않습니다.",
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 108,
 			})
 			return
 		}
@@ -63,6 +65,7 @@ func Login() gin.HandlerFunc {
 		model.AccessTokenRedis.Set(context.Background(), token, req.Email, 0)
 
 		c.JSON(http.StatusOK, gin.H{
+			"code":       200,
 			"token":      token,
 			"secret_key": secretKey,
 		})

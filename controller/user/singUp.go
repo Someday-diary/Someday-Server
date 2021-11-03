@@ -22,8 +22,8 @@ func SignUp() gin.HandlerFunc {
 		req := new(SignUpRequest)
 		err := c.Bind(req)
 		if err != nil {
-			c.JSON(http.StatusNotAcceptable, gin.H{
-				"msg": err.Error(),
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 400,
 			})
 			return
 		}
@@ -32,14 +32,14 @@ func SignUp() gin.HandlerFunc {
 		result := model.DB.Where("email = ?", req.Email).First(&user)
 		if result.Error != nil || user.Status == "not authenticated" {
 			c.JSON(http.StatusForbidden, gin.H{
-				"msg": "이메일 인증 안함 응애",
+				"code": 104,
 			})
 			return
 		}
 
 		if user.Status == "normal" {
 			c.JSON(http.StatusForbidden, gin.H{
-				"msg": "이미 있는 계정입니다",
+				"code": 105,
 			})
 			return
 		}
@@ -71,7 +71,7 @@ func SignUp() gin.HandlerFunc {
 		})
 
 		c.JSON(http.StatusOK, gin.H{
-			"msg": "success",
+			"code": 200,
 		})
 	}
 }

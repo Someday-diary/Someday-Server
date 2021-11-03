@@ -27,7 +27,7 @@ func CreatePost() gin.HandlerFunc {
 		err := c.Bind(req)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"msg": "리퀘 똑바로 날리십쇼..",
+				"code": 400,
 			})
 			return
 		}
@@ -39,14 +39,13 @@ func CreatePost() gin.HandlerFunc {
 			id, _ := uuid.NewV4()
 			u := id.String()
 
-			t, err := time.Parse("2006-01-02", diary.Date)
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{
-					"msg":        "시간 똑바로 입력 안하냐?",
-					"네놈이 입력한 시간": diary.Date,
-				})
-				return
-			}
+		t, err := time.Parse("2006-01-02", req.Date)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 409,
+			})
+			return
+		}
 
 			e, err := lib.Cipher.Encrypt(diary.Contents)
 			if err != nil {
@@ -76,7 +75,8 @@ func CreatePost() gin.HandlerFunc {
 			}
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"msg": "success",
+			"code":    200,
+			"post_id": req.ID,
 		})
 	}
 }

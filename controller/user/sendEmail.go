@@ -21,19 +21,43 @@ func SendEmail() gin.HandlerFunc {
 		req := new(SendEmailRequest)
 		err := c.Bind(req)
 		if err != nil {
-			c.JSON(http.StatusNotAcceptable, gin.H{
-				"msg": err.Error(),
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 400,
 			})
 			return
 		}
 
-		err = model.DB.Select("email").
-			Create(&model.User{Email: req.Email, CreatedAt: time.Now().Add(time.Hour * 9)}).Error
+		var u model.User
+		var n int64
+		err = model.DB.Find(&u, "email = ?", req.Email).Count(&n).Error
+
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			panic(err)
+		}
+
+		if n >= 1 {
+			if u.Status == "normal" || u.Status == "authenticated" {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"code": 101,
+				})
+				return
+			}
+		}
+
+		u = model.User{
+			Email: req.Email,
+			Pwd: sql.NullString{
+				String: "",
+				Valid:  false,
+			},
+			Agree:     "N",
+			Status:    "not authenticated",
+			CreatedAt: time.Now(),
+		}
+
+		err = model.DB.Create(&u).Error
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"msg": "이미 가입되어있는 유저입니다.",
-			})
-			return
+			panic(err)
 		}
 
 		code, err := lib.CreateCode()
@@ -59,5 +83,8 @@ func SendEmail() gin.HandlerFunc {
 			_ = c.Error(err)
 			return
 		}
+		c.JSON(http.StatusOK, gin.H{
+			"code": 200,
+		})
 	}
 }

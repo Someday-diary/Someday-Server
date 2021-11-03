@@ -18,8 +18,8 @@ func EmailConfirm() gin.HandlerFunc {
 		req := new(EmailConfirmRequest)
 		err := c.Bind(req)
 		if err != nil {
-			c.JSON(http.StatusNotAcceptable, gin.H{
-				"msg": err.Error(),
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 400,
 			})
 			return
 		}
@@ -27,14 +27,14 @@ func EmailConfirm() gin.HandlerFunc {
 		code, err := model.EmailVerifyRedis.Get(context.Background(), req.Email).Result()
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"msg": "유효한 인증 정보가 없습니다",
+				"code": 102,
 			})
 			return
 		}
 
 		if code != req.Code {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"msg": "입력한 코드가 맞지 않습니다",
+				"code": 103,
 			})
 			return
 		}
@@ -46,7 +46,7 @@ func EmailConfirm() gin.HandlerFunc {
 			Updates(model.User{Status: "authenticated"})
 
 		c.JSON(http.StatusOK, gin.H{
-			"msg": "이메일 인증에 성공하였습니다!",
+			"code": 200,
 		})
 	}
 }

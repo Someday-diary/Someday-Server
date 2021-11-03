@@ -12,14 +12,25 @@ func DeletePost() gin.HandlerFunc {
 		var post model.Post
 		err := model.DB.Delete(&post, "id = ?", c.Param("post_id")).Error
 		if err != nil {
+			panic(err)
+		}
+
+		if n == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"msg": "포스트가 없습니다",
+				"code": 110,
+			})
+			return
+		}
+
+		if email := c.GetHeader("email"); email != post.Email {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 111,
 			})
 			return
 		}
 
 		c.JSON(http.StatusOK, gin.H{
-			"msg": "success",
+			"code": 200,
 		})
 	}
 }

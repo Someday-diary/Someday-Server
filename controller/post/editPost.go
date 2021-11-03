@@ -24,7 +24,7 @@ func EditPost() gin.HandlerFunc {
 		err := c.Bind(req)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
-				"msg": "리퀘 똑바로 날리십쇼..",
+				"code": 400,
 			})
 			return
 		}
@@ -45,7 +45,7 @@ func EditPost() gin.HandlerFunc {
 			}
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"msg": "success",
+			"code": 200,
 		})
 	}
 }
