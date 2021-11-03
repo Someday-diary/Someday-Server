@@ -2,6 +2,8 @@ package user
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -10,6 +12,7 @@ import (
 	"github.com/Someday-diary/Someday-Server/lib"
 	"github.com/Someday-diary/Someday-Server/model"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type SendEmailRequest struct {
