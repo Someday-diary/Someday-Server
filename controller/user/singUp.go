@@ -47,8 +47,7 @@ func SignUp() gin.HandlerFunc {
 
 		h, err := bcrypt.GenerateFromPassword([]byte(req.Pwd), bcrypt.DefaultCost)
 		if err != nil {
-			_ = c.Error(err)
-			return
+			panic(err)
 		}
 
 		model.DB.Model(&user).Where("email = ?", req.Email).
@@ -63,8 +62,6 @@ func SignUp() gin.HandlerFunc {
 		if err != nil {
 			log.Panic(err)
 		}
-
-		//t := lib.EncryptAES([]byte(os.Getenv("secret_key")), key)
 
 		model.DB.Create(&model.Secret{
 			Email:     req.Email,
