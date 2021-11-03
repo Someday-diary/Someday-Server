@@ -19,7 +19,6 @@ func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		req := new(SignUpRequest)
 		err := c.Bind(req)
-
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code": 400,
@@ -58,8 +57,7 @@ func Login() gin.HandlerFunc {
 		model.DB.Select("secret_key").Where("email = ?", req.Email).Limit(1).Find(&k)
 		secretKey, err := lib.SystemCipher.Decrypt(k.SecretKey)
 		if err != nil {
-			_ = c.Error(err)
-			return
+			panic(err)
 		}
 
 		model.AccessTokenRedis.Set(context.Background(), token, req.Email, 0)
