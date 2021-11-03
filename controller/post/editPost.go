@@ -3,6 +3,7 @@ package post
 import (
 	"net/http"
 
+	"github.com/Someday-diary/Someday-Server/lib"
 	"github.com/Someday-diary/Someday-Server/model"
 	"github.com/gin-gonic/gin"
 )
