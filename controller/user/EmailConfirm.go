@@ -23,7 +23,6 @@ func EmailConfirm() gin.HandlerFunc {
 			})
 			return
 		}
-
 		code, err := model.EmailVerifyRedis.Get(context.Background(), req.Email).Result()
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -41,9 +40,15 @@ func EmailConfirm() gin.HandlerFunc {
 
 		var user model.User
 
-		model.EmailVerifyRedis.Del(context.Background(), req.Email)
-		model.DB.Model(&user).Select("status").Where("email = ?", req.Email).
-			Updates(model.User{Status: "authenticated"})
+		_, err = model.EmailVerifyRedis.Del(context.Background(), req.Email).Result()
+		if err != nil {
+			panic(err)
+		}
+		err = model.DB.Model(&user).Select("status").Where("email = ?", req.Email).
+			Updates(model.User{Status: "authenticated"}).Error
+		if err != nil {
+			panic(err)
+		}
 
 		c.JSON(http.StatusOK, gin.H{
 			"code": 200,
