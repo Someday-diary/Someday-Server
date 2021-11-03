@@ -27,8 +27,9 @@ func main() {
 
 	userAPI := r.Group("/user")
 	{
-		userAPI.POST("", user.SignUp())
+		userAPI.POST("/sign_up", user.SignUp())
 		userAPI.POST("/login", user.Login())
+		userAPI.DELETE("/logout", middleware.Auth(), user.Logout())
 		userAPI.POST("/verify", user.SendEmail())
 		userAPI.POST("/verify/confirm", user.EmailConfirm())
 	}
@@ -37,6 +38,7 @@ func main() {
 	{
 		postAPI.POST("", post.CreatePost())
 		postAPI.GET("", post.GetPost())
+		postAPI.GET("/date", post.GetPostByDate())
 		postAPI.GET("/:post_id", post.GetPostByID())
 		postAPI.PATCH("/:post_id", post.EditPost())
 		postAPI.DELETE("/:post_id", post.DeletePost())
