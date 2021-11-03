@@ -10,7 +10,9 @@ import (
 func DeletePost() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var post model.Post
-		err := model.DB.Delete(&post, "id = ?", c.Param("post_id")).Error
+		var n int64
+		err := model.DB.Delete(&post, "id = ?", c.Param("post_id")).Count(&n)
+
 		if err != nil {
 			panic(err)
 		}
