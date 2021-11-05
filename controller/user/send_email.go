@@ -77,7 +77,7 @@ func SendEmail() gin.HandlerFunc {
 		}
 
 		r := lib.NewRequest(req.Email, os.Getenv("smtp_id"), "[오늘하루] 회원가입을 위한 인증번호를 알려드립니다", "")
-		err = r.ParseTemplate("templates/index.html", templateData)
+		err = r.ParseTemplate("templates/email.html", templateData)
 		if err != nil {
 			log.Panic(err)
 		}
