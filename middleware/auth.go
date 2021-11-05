@@ -30,12 +30,11 @@ func Auth() gin.HandlerFunc {
 
 		ci, err := lib.NewNiceCrypto(os.Getenv("secret_key"), os.Getenv("cipher_iv_key"))
 		if err != nil {
-			c.AbortWithStatus(500)
+			c.AbortWithStatus(http.StatusInternalServerError)
 		}
 		k, err := ci.Decrypt(secret.SecretKey)
 		if err != nil {
-			_ = c.Error(err)
-			c.Next()
+			c.AbortWithStatus(http.StatusInternalServerError)
 		}
 		c.Request.Header.Set("secret_key", k)
 		c.Next()
