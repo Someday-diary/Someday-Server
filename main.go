@@ -38,6 +38,7 @@ func main() {
 	{
 		postAPI.POST("", post.CreatePost())
 		postAPI.GET("", post.GetPost())
+		postAPI.GET("/month", post.GetPostByMonth())
 		postAPI.GET("/date", post.GetPostByDate())
 		postAPI.GET("/:post_id", post.GetPostByID())
 		postAPI.PATCH("/:post_id", post.EditPost())
