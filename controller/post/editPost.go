@@ -28,7 +28,7 @@ func EditPost() gin.HandlerFunc {
 
 		key := c.GetHeader("secret_key")
 
-		aes := lib.CreateCipher(key)
+		cipher := lib.CreateCipher(key)
 
 		var post model.Post
 		e, err := aes.Encrypt(req.Contents)
@@ -42,7 +42,7 @@ func EditPost() gin.HandlerFunc {
 
 		model.DB.Where("post_id = ?", req.ID).Delete(&model.Tag{})
 		for _, tag := range req.Tags {
-			e, err := aes.Encrypt(tag.TagName)
+			e, err := cipher.Encrypt(tag.TagName)
 			if err != nil {
 				panic(err)
 			}
