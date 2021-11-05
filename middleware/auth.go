@@ -26,7 +26,7 @@ func Auth() gin.HandlerFunc {
 		var secret model.Secret
 		model.DB.First(&secret, "email = ?", email)
 
-		c.Request.Header.Set("email", email)
+		c.Request.Header.Add("email", email)
 
 		ci, err := lib.NewNiceCrypto(os.Getenv("secret_key"), os.Getenv("cipher_iv_key"))
 		if err != nil {
