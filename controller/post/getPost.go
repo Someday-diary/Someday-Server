@@ -257,12 +257,12 @@ func GetPostByDate() gin.HandlerFunc {
 			panic(err)
 		}
 
-		fmt.Println(posts)
-		for _, post := range posts {
-			temp := postResponse{}
-			t := post.CreatedAt.Format("2006-01-02")
-			temp.Date = t
-			temp.PostID = post.ID
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			res.Code = 110
+			res.Post = nil
+			c.JSON(http.StatusBadRequest, res)
+			return
+		}
 
 		model.DB.Find(&post.Tag, "post_id = ?", post.ID)
 
