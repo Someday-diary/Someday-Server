@@ -11,96 +11,99 @@ import (
 	"gorm.io/gorm"
 )
 
-type PRes struct {
-	PostID   string `json:"post_id"`
-	Contents string `json:"contents"`
-	Email    string `json:"email"`
-	Date     string `json:"date"`
-
-	Tag []Tag `json:"tag"`
+type tag struct {
+	TagName string `json:"tag_name"`
 }
 
-type Tag struct {
-	TagName string `json:"tag_name"`
+type post struct {
+	PostID   string `json:"post_id,omitempty"`
+	Contents string `json:"contents,omitempty"`
+	Date     string `json:"date,omitempty"`
+
+	Tags *[]tag `json:"tags,omitempty"`
 }
 
 func GetPostByID() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		type response struct {
+			Code int   `json:"code,omitempty"`
+			Post *post `json:"post,omitempty"`
+		}
+		res := new(response)
+		res.Post = new(post)
+		res.Post.Tags = new([]tag)
+
 		id := c.Param("post_id")
 		email := c.GetHeader("email")
+		key := c.GetHeader("secret_key")
 
-		var secretKey model.Secret
-		err := model.DB.Find(&secretKey, "email = ?", email).Error
-		if err != nil && !(errors.Is(err, gorm.ErrRecordNotFound)) {
-			panic(err)
-		}
-
-		key, err := lib.SystemCipher.Decrypt(secretKey.SecretKey)
-		if err != nil {
-			panic(err)
-		}
-
-		aes := lib.CreateCipher(key)
+		cipher := lib.CreateCipher(key)
 
 		var post model.Post
 		var n int64
-		err = model.DB.First(&post, "id = ?", id).Count(&n).Error
+		err := model.DB.First(&post, "id = ?", id).Count(&n).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			panic(err)
 		}
 
 		if n == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": 110,
-			})
+			res.Code = 110
+			res.Post = nil
+			c.JSON(http.StatusBadRequest, res)
 			return
 		}
-		if post.Email != c.GetHeader("email") {
-			c.JSON(http.StatusForbidden, gin.H{
-				"code": 111,
-			})
+		if post.Email != email {
+			res.Code = 111
+			res.Post = nil
+			c.JSON(http.StatusForbidden, res)
 			return
 		}
 		model.DB.Find(&post.Tag, "post_id = ?", id)
 
-		res := PRes{}
-
-		res.PostID = post.ID
-		res.Date = post.CreatedAt.Format("2006-01-02")
-		res.Email = post.Email
-		res.Contents, err = aes.Decrypt(post.Contents)
+		res.Post.PostID = post.ID
+		res.Post.Date = post.CreatedAt.Format("2006-01-02")
+		res.Post.Contents, err = cipher.Decrypt(post.Contents)
 		if err != nil {
 			panic(err)
 		}
 
-		for _, tag := range post.Tag {
-			temp := Tag{}
-			temp.TagName, err = aes.Decrypt(tag.TagName)
+		for _, t := range post.Tag {
+			temp := tag{}
+			temp.TagName, err = cipher.Decrypt(t.TagName)
 			if err != nil {
 				panic(err)
 			}
-			res.Tag = append(res.Tag, temp)
+			*res.Post.Tags = append(*res.Post.Tags, temp)
 		}
 
+		res.Code = 200
 		c.JSON(http.StatusOK, res)
 	}
 }
 
 func GetPost() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		type response struct {
+			Code  int     `json:"code,omitempty"`
+			Posts *[]post `json:"posts,omitempty"`
+		}
+		res := new(response)
+		res.Posts = new([]post)
+
 		req := c.QueryArray("tags")
 		var err error
 
-		email := c.Request.Header.Get("email")
+		email := c.GetHeader("email")
 		key := c.GetHeader("secret_key")
 
-		aes := lib.CreateCipher(key)
+		cipher := lib.CreateCipher(key)
 
 		var posts []model.Post
+		var n int64
 
 		if len(req) != 0 {
 			for i, tag := range req {
-				req[i], err = aes.Encrypt(tag)
+				req[i], err = cipher.Encrypt(tag)
 				if err != nil {
 					panic(err)
 				}
@@ -108,9 +111,9 @@ func GetPost() gin.HandlerFunc {
 
 			err = model.DB.Raw("SELECT post.* FROM tag JOIN post ON post.id = tag.post_id WHERE post.email = ? and tag.tag_name in "+
 				"(?) GROUP BY tag.post_id having (count(tag.tag_name) = ?)",
-				email, req, len(req)).First(&posts).Error
+				email, req, len(req)).First(&posts).Count(&n).Error
 		} else {
-			err = model.DB.Raw("select * from post where email = ?", email).First(&posts).Error
+			err = model.DB.Raw("select * from post where email = ?", email).First(&posts).Count(&n).Error
 		}
 
 		if err != nil {
@@ -119,75 +122,140 @@ func GetPost() gin.HandlerFunc {
 			}
 		}
 
-		var res []PRes
+		if n == 0 {
+			res.Code = 110
+			res.Posts = nil
+			c.JSON(http.StatusBadRequest, res)
+			return
+		}
 
-		for i, post := range posts {
-			temp := PRes{
-				PostID: post.ID,
-				Email:  post.Email,
-				Date:   post.CreatedAt.Format("2006-01-02"),
+		for i, p := range posts {
+			temp := post{
+				PostID: p.ID,
+				Date:   p.CreatedAt.Format("2006-01-02"),
+				Tags:   new([]tag),
 			}
 
-			err = model.DB.Find(&posts[i].Tag, "post_id = ?", post.ID).Error
+			err = model.DB.Find(&posts[i].Tag, "post_id = ?", p.ID).Error
 			if err != nil {
 				panic(err)
 			}
 
-			temp.Contents, err = aes.Decrypt(post.Contents)
+			temp.Contents, err = cipher.Decrypt(p.Contents)
 			if err != nil {
 				panic(err)
 			}
 
-			for _, tag := range posts[i].Tag {
-				tempTag := Tag{}
-				tempTag.TagName, err = aes.Decrypt(tag.TagName)
+			for _, t := range posts[i].Tag {
+				tempTag := tag{}
+				tempTag.TagName, err = cipher.Decrypt(t.TagName)
 				if err != nil {
 					panic(err)
 				}
-				temp.Tag = append(temp.Tag, tempTag)
+				*temp.Tags = append(*temp.Tags, tempTag)
 			}
 
-			res = append(res, temp)
+			*res.Posts = append(*res.Posts, temp)
 		}
+		res.Code = 200
 		c.JSON(200, res)
 	}
 }
 
-type postResponse struct {
-	Date   string `json:"date"`
-	PostID string `json:"post_id"`
-}
-
-func GetPostByDate() gin.HandlerFunc {
+func GetPostByMonth() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		type response struct {
+			Code  int     `json:"code,omitempty"`
+			Posts *[]post `json:"posts,omitempty"`
+		}
+		res := new(response)
+		res.Posts = new([]post)
+
 		year, ok := c.GetQuery("year")
 		if ok == false {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": 400,
-			})
+			res.Code = 400
+			res.Posts = nil
+			c.JSON(http.StatusBadRequest, res)
 		}
 		month, ok := c.GetQuery("month")
 		if ok == false {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": 400,
-			})
+			res.Code = 400
+			res.Posts = nil
+			c.JSON(http.StatusBadRequest, res)
 		}
 
 		email := c.GetHeader("email")
 
 		date := fmt.Sprintf("%s-%s-1", year, month)
 		var posts []model.Post
-		model.DB.Select("id, created_at").Where("email = ? and date_format(created_at, '%Y %m') = "+
+		model.DB.Select("post.*").Where("email = ? and date_format(created_at, '%Y %m') = "+
 			"date_format(?, '%Y %m')", email, date).Find(&posts)
 
 		if len(posts) == 0 {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"code": 110,
-			})
+			res.Code = 110
+			res.Posts = nil
+			c.JSON(http.StatusBadRequest, res)
 			return
 		}
 
-		var res []postResponse
+		for _, p := range posts {
+			temp := post{
+				PostID: p.ID,
+				Date:   p.CreatedAt.Format("2006-01-02"),
+			}
+			*res.Posts = append(*res.Posts, temp)
+		}
+
+		res.Code = 200
+		c.JSON(http.StatusOK, res)
+	}
+}
+
+func GetPostByDate() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		type response struct {
+			Code int   `json:"code,omitempty"`
+			Post *post `json:"post,omitempty"`
+		}
+		res := new(response)
+		res.Post = new(post)
+		res.Post.Tags = new([]tag)
+
+		year, ok := c.GetQuery("year")
+		if ok == false {
+			res.Code = 400
+			res.Post = nil
+			c.JSON(http.StatusBadRequest, res)
+			return
+		}
+		month, ok := c.GetQuery("month")
+		if ok == false {
+			res.Code = 400
+			res.Post = nil
+			c.JSON(http.StatusBadRequest, res)
+			return
+		}
+
+		day, ok := c.GetQuery("day")
+		if ok == false {
+			res.Code = 400
+			res.Post = nil
+			c.JSON(http.StatusBadRequest, res)
+			return
+		}
+
+		email := c.GetHeader("email")
+		key := c.GetHeader("secret_key")
+
+		cipher := lib.CreateCipher(key)
+
+		date := fmt.Sprintf("%s-%s-%s", year, month, day)
+		var post model.Post
+		err := model.DB.Where("email = ? and date_format(created_at, '%Y %m %d') = "+
+			"date_format(?, '%Y %m %d')", email, date).First(&post).Error
+		if err != nil && !(errors.Is(err, gorm.ErrRecordNotFound)) {
+			panic(err)
+		}
 
 		fmt.Println(posts)
 		for _, post := range posts {
@@ -196,9 +264,25 @@ func GetPostByDate() gin.HandlerFunc {
 			temp.Date = t
 			temp.PostID = post.ID
 
-			res = append(res, temp)
+		model.DB.Find(&post.Tag, "post_id = ?", post.ID)
+
+		res.Post.PostID = post.ID
+		res.Post.Date = post.CreatedAt.Format("2006-01-02")
+		res.Post.Contents, err = cipher.Decrypt(post.Contents)
+		if err != nil {
+			panic(err)
 		}
 
+		for _, t := range post.Tag {
+			temp := tag{}
+			temp.TagName, err = cipher.Decrypt(t.TagName)
+			if err != nil {
+				panic(err)
+			}
+			*res.Post.Tags = append(*res.Post.Tags, temp)
+		}
+
+		res.Code = 200
 		c.JSON(http.StatusOK, res)
 	}
 }
