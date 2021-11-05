@@ -29,7 +29,7 @@ func Connect() {
 		os.Getenv("mysql_db_name"))
 
 	sqlDB, err := sql.Open("mysql", dsn)
-	db, err := gorm.Open(mysql.New(mysql.Config{Conn: sqlDB, DefaultStringSize: 191}), &gorm.Config{})
+	db, err := gorm.Open(mysql.New(mysql.Config{Conn: sqlDB, DefaultStringSize: 191}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 
 	if err != nil {
 		panic(err)
