@@ -1,11 +1,13 @@
 package post
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/Someday-diary/Someday-Server/lib"
 	"github.com/Someday-diary/Someday-Server/model"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type EditPostRequest struct {
@@ -31,7 +33,22 @@ func EditPost() gin.HandlerFunc {
 		cipher := lib.CreateCipher(key)
 
 		var post model.Post
-		e, err := aes.Encrypt(req.Contents)
+		err = model.DB.First(&post, "id = ?", postID).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			panic(err)
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 110,
+			})
+			return
+		} else if post.Email != email {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"code": 111,
+			})
+			return
+		}
+
+		e, err := cipher.Encrypt(req.Contents)
 		if err != nil {
 			panic(err)
 		}
