@@ -13,6 +13,7 @@ import (
 	"github.com/Someday-diary/Someday-Server/model"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type SendEmailRequest struct {
@@ -39,7 +40,7 @@ func SendEmail() gin.HandlerFunc {
 		}
 
 		if n >= 1 {
-			if u.Status == "normal" || u.Status == "authenticated" {
+			if u.Status == "normal" {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"code": 101,
 				})
@@ -58,7 +59,9 @@ func SendEmail() gin.HandlerFunc {
 			CreatedAt: time.Now(),
 		}
 
-		err = model.DB.Create(&u).Error
+		err = model.DB.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(&u).Error
 		if err != nil {
 			panic(err)
 		}
