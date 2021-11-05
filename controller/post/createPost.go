@@ -1,7 +1,6 @@
 package post
 
 import (
-	"fmt"
 	"net/http"
 	"time"
 
@@ -44,7 +43,6 @@ func CreatePost() gin.HandlerFunc {
 		}
 
 		e, err := aes.Encrypt(req.Contents)
-		fmt.Println(e)
 		if err != nil {
 			panic(err)
 		}
