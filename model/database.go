@@ -8,6 +8,7 @@ import (
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
+	"gorm.io/gorm/logger"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/mysql"
