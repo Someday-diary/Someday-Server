@@ -9,12 +9,10 @@ import (
 )
 
 type EditPostRequest struct {
-	ID       string `json:"id"`
-	Contents string `json:"contents"`
-	Date     string `json:"date"`
+	Contents string `json:"contents" binding:"required"`
 	Tags     []struct {
-		TagName string `json:"tag"`
-	} `json:"tags"`
+		TagName string `json:"tag" binding:"required"`
+	} `json:"tags" binding:"required"`
 }
 
 func EditPost() gin.HandlerFunc {
