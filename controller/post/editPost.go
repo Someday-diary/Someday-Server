@@ -28,6 +28,8 @@ func EditPost() gin.HandlerFunc {
 			return
 		}
 
+		postID := c.Param("post_id")
+		email := c.GetHeader("email")
 		key := c.GetHeader("secret_key")
 
 		cipher := lib.CreateCipher(key)
@@ -53,11 +55,11 @@ func EditPost() gin.HandlerFunc {
 			panic(err)
 		}
 
-		model.DB.Model(&post).Where("id = ?", req.ID).Updates(&model.Post{
+		model.DB.Model(&post).Where("id = ?", postID).Updates(&model.Post{
 			Contents: e,
 		})
 
-		model.DB.Where("post_id = ?", req.ID).Delete(&model.Tag{})
+		model.DB.Where("post_id = ?", postID).Delete(&model.Tag{})
 		for _, tag := range req.Tags {
 			e, err := cipher.Encrypt(tag.TagName)
 			if err != nil {
@@ -65,7 +67,7 @@ func EditPost() gin.HandlerFunc {
 			}
 
 			t := model.Tag{
-				PostID:  req.ID,
+				PostID:  postID,
 				TagName: e,
 			}
 			model.DB.Create(&t)
