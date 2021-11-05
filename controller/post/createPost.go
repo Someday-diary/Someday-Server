@@ -12,11 +12,11 @@ import (
 
 type CreatePostRequest struct {
 	Tags []struct {
-		TagName string `json:"tag"`
+		TagName string `json:"tag" binding:"required"`
 	} `json:"tags"`
-	Contents string `json:"contents"`
-	Date     string `json:"date"`
-	ID       string `json:"id"`
+	Contents string `json:"contents" binding:"required"`
+	Date     string `json:"date" binding:"required"`
+	ID       string `json:"id" binding:"required"`
 }
 
 func CreatePost() gin.HandlerFunc {
