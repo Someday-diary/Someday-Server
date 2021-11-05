@@ -5,12 +5,12 @@ import (
 )
 
 type Post struct {
-	ID        string    `gorm:"primaryKey" json:"id"`
-	Email     string    `json:"email"`
-	Contents  string    `json:"contents"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        string    `gorm:"primaryKey" json:"id,omitempty"`
+	Email     string    `json:"email" json:"email,omitempty"`
+	Contents  string    `json:"contents" json:"contents,omitempty"`
+	CreatedAt time.Time `json:"created_at" json:"created_at"`
 
-	Tag []Tag `gorm:"foreignKey: PostID" json:"tag"`
+	Tag []Tag `gorm:"foreignKey: PostID" json:"tag" json:"tag,omitempty"`
 }
 
 func (Post) TableName() string {
