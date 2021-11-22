@@ -10,7 +10,7 @@ type Post struct {
 	Contents  string    `json:"contents" json:"contents,omitempty"`
 	CreatedAt time.Time `json:"created_at" json:"created_at"`
 
-	Tag []Tag `gorm:"foreignKey: PostID" json:"tag" json:"tag,omitempty"`
+	Tag []Tag `gorm:"foreignKey: PostID; constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"tag" json:"tag,omitempty"`
 }
 
 func (Post) TableName() string {
