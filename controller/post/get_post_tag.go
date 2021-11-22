@@ -16,11 +16,11 @@ func GetPost() gin.HandlerFunc {
 			Code  int     `json:"code,omitempty"`
 			Posts *[]post `json:"posts,omitempty"`
 		}
+		var err error
 		res := new(response)
 		res.Posts = new([]post)
 
 		req := c.QueryArray("tags")
-		var err error
 
 		email := c.GetHeader("email")
 		key := c.GetHeader("secret_key")
@@ -40,7 +40,7 @@ func GetPost() gin.HandlerFunc {
 
 			err = model.DB.Raw("SELECT post.* FROM tag JOIN post ON post.id = tag.post_id WHERE post.email = ? and tag.tag_name in "+
 				"(?) GROUP BY tag.post_id having (count(tag.tag_name) = ?)",
-				email, req, len(req)).First(&posts).Count(&n).Error
+				email, req, len(req)).First(&posts).Order("post.created_at desc").Count(&n).Error
 		} else {
 			err = model.DB.Raw("select * from post where email = ?", email).First(&posts).Count(&n).Error
 		}
