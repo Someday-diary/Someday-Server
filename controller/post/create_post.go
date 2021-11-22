@@ -32,6 +32,23 @@ func CreatePost() gin.HandlerFunc {
 		email := c.GetHeader("email")
 		key := c.GetHeader("secret_key")
 
+		keys := make(map[string]struct {
+			TagName string `json:"tag" binding:"required"`
+		})
+		tags := make([]struct {
+			TagName string `json:"tag" binding:"required"`
+		}, 0)
+		for _, v := range req.Tags {
+			if _, ok := keys[v.TagName]; ok {
+				continue
+			} else {
+				keys[v.TagName] = v
+				tags = append(tags, v)
+			}
+		}
+
+		req.Tags = tags
+
 		aes := lib.CreateCipher(key)
 
 		t, err := time.Parse("2006-01-02", req.Date)
