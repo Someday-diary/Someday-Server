@@ -12,8 +12,8 @@ type User struct {
 	Status    string         `gorm:"type:enum('normal','not authenticated', 'authenticated'); default:'not authenticated';" json:"status"`
 	CreatedAt time.Time      `json:"created_at"`
 
-	Secret Secret `gorm:"foreignKey: Email" json:"secret"`
-	Post   []Post `gorm:"foreignKey: Email" json:"post"`
+	Secret Secret `gorm:"foreignKey: Email; constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"secret"`
+	Post   []Post `gorm:"foreignKey: Email; constraint:OnUpdate:CASCADE,OnDelete:CASCADE" json:"post"`
 }
 
 func (User) TableName() string {
