@@ -30,8 +30,8 @@ func DeletePost() gin.HandlerFunc {
 			return
 		}
 
-		err = model.DB.Delete(&post, "id = ?", c.Param("post_id")).Error
-		if err != nil {
+		err = model.DB.Delete(&model.Post{ID: postID}).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			panic(err)
 		}
 
