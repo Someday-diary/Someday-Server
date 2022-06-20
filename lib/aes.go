@@ -46,7 +46,6 @@ func (c NiceCrypto) Encrypt(plainText string) (string, error) {
 	paddedPlainText := padPKCS7([]byte(plainText), encrypter.BlockSize())
 
 	cipherText := make([]byte, len(paddedPlainText))
-	// CryptBlocks 함수에 데이터(paddedPlainText)와 암호화 될 데이터를 저장할 슬라이스(cipherText)를 넣으면 암호화가 된다.
 	encrypter.CryptBlocks(cipherText, paddedPlainText)
 
 	return base64.StdEncoding.EncodeToString(cipherText), nil

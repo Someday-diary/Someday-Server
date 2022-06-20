@@ -6,15 +6,18 @@ import (
 	"os"
 
 	"github.com/Someday-diary/Someday-Server/lib"
-	"github.com/Someday-diary/Someday-Server/model"
+	"github.com/Someday-diary/Someday-Server/model/dao"
+	"github.com/Someday-diary/Someday-Server/model/database"
 	"github.com/gin-gonic/gin"
 )
 
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		redis := database.ConnectTokenRedis()
+		db := database.ConnectDB()
 		t := c.GetHeader("access_token")
 
-		email, err := model.AccessTokenRedis.Get(context.Background(), t).Result()
+		email, err := redis.Get(context.Background(), t).Result()
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"code": 401,
@@ -23,8 +26,8 @@ func Auth() gin.HandlerFunc {
 			return
 		}
 
-		var secret model.Secret
-		model.DB.First(&secret, "email = ?", email)
+		var secret dao.Secret
+		db.First(&secret, "email = ?", email)
 
 		c.Request.Header.Add("email", email)
 
