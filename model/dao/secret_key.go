@@ -1,4 +1,4 @@
-package model
+package dao
 
 type Secret struct {
 	Email     string `gorm:"primaryKey" json:"email"`

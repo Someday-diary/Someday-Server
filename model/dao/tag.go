@@ -1,4 +1,4 @@
-package model
+package dao
 
 type Tag struct {
 	PostID  string `json:"post_id"`
