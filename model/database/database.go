@@ -16,6 +16,12 @@ import (
 	"gorm.io/gorm"
 )
 
+var (
+	DB      *gorm.DB
+	TokenDB *redis.Client
+	EmailDB *redis.Client
+)
+
 func init() {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True",
 		os.Getenv("mysql_username"),
@@ -24,12 +30,12 @@ func init() {
 		os.Getenv("mysql_port"),
 		os.Getenv("mysql_db_name"))
 	sqlDB, err := sql.Open("mysql", dsn)
-	db, err := gorm.Open(mysql.New(mysql.Config{Conn: sqlDB, DefaultStringSize: 191}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	DB, err = gorm.Open(mysql.New(mysql.Config{Conn: sqlDB, DefaultStringSize: 191}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		log.Panic(err)
 	}
 
-	err = db.AutoMigrate(
+	err = DB.AutoMigrate(
 		&dao.User{},
 		&dao.Secret{},
 		&dao.Post{},
@@ -39,56 +45,29 @@ func init() {
 		log.Panic(err)
 	}
 
-	log.Print("[DATABASE] 연결 완료")
-}
-
-func ConnectDB() *gorm.DB {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True",
-		os.Getenv("mysql_username"),
-		os.Getenv("mysql_pwd"),
-		os.Getenv("mysql_address"),
-		os.Getenv("mysql_port"),
-		os.Getenv("mysql_db_name"))
-
-	sqlDB, err := sql.Open("mysql", dsn)
-	db, err := gorm.Open(mysql.New(
-		mysql.Config{
-			Conn:              sqlDB,
-			DefaultStringSize: 191}),
-		&gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent)})
-	if err != nil {
-		log.Panic(err)
-	}
-	return db
-}
-
-func ConnectTokenRedis() *redis.Client {
 	ctx := context.Background()
-	r := redis.NewClient(&redis.Options{
+	TokenDB = redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis_address"),
 		Password: os.Getenv("redis_pwd"), // no password set
 		DB:       0,                      // use default DB
 	})
 
-	_, err := r.Ping(ctx).Result()
+	_, err = TokenDB.Ping(ctx).Result()
 	if err != nil {
 		log.Panic(err)
 	}
-	return r
-}
 
-func ConnectEmailRedis() *redis.Client {
-	ctx := context.Background()
-	r := redis.NewClient(&redis.Options{
+	ctx = context.Background()
+	EmailDB = redis.NewClient(&redis.Options{
 		Addr:     os.Getenv("redis_address"),
 		Password: os.Getenv("redis_pwd"), // no password set
 		DB:       1,                      // use default DB
 	})
 
-	_, err := r.Ping(ctx).Result()
+	_, err = EmailDB.Ping(ctx).Result()
 	if err != nil {
 		log.Panic(err)
 	}
-	return r
+
+	log.Print("[DATABASE] 연결 완료")
 }

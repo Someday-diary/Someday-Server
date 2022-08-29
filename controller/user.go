@@ -26,9 +26,6 @@ type EmailConfirmRequest struct {
 
 func EmailConfirm() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		redis := database.ConnectEmailRedis()
-		db := database.ConnectDB()
-
 		req := new(EmailConfirmRequest)
 		err := c.Bind(req)
 		if err != nil {
@@ -37,7 +34,7 @@ func EmailConfirm() gin.HandlerFunc {
 			})
 			return
 		}
-		code, err := redis.Get(context.Background(), req.Email).Result()
+		code, err := database.EmailDB.Get(context.Background(), req.Email).Result()
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code": 102,
@@ -54,11 +51,11 @@ func EmailConfirm() gin.HandlerFunc {
 
 		var user dao.User
 
-		_, err = redis.Del(context.Background(), req.Email).Result()
+		_, err = database.EmailDB.Del(context.Background(), req.Email).Result()
 		if err != nil {
 			panic(err)
 		}
-		err = db.Model(&user).Select("status").Where("email = ?", req.Email).
+		err = database.DB.Model(&user).Select("status").Where("email = ?", req.Email).
 			Updates(dao.User{Status: "authenticated"}).Error
 		if err != nil {
 			panic(err)
@@ -72,9 +69,6 @@ func EmailConfirm() gin.HandlerFunc {
 
 func Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		redis := database.ConnectTokenRedis()
-		db := database.ConnectDB()
-
 		req := new(dto.SignUp)
 		err := c.Bind(req)
 		if err != nil {
@@ -86,7 +80,7 @@ func Login() gin.HandlerFunc {
 
 		var user dao.User
 		var count int64
-		db.Find(&user, "email = ?", req.Email).Count(&count)
+		database.DB.Find(&user, "email = ?", req.Email).Count(&count)
 
 		if count == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -112,13 +106,13 @@ func Login() gin.HandlerFunc {
 		token := lib.CreateToken(8)
 
 		var k dao.Secret
-		db.Select("secret_key").Where("email = ?", req.Email).Limit(1).Find(&k)
+		database.DB.Select("secret_key").Where("email = ?", req.Email).Limit(1).Find(&k)
 		secretKey, err := lib.SystemCipher.Decrypt(k.SecretKey)
 		if err != nil {
 			panic(err)
 		}
 
-		redis.Set(context.Background(), token, req.Email, 0)
+		database.TokenDB.Set(context.Background(), token, req.Email, 0)
 
 		c.JSON(http.StatusOK, gin.H{
 			"code":       200,
@@ -130,9 +124,7 @@ func Login() gin.HandlerFunc {
 
 func Logout() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		redis := database.ConnectTokenRedis()
-
-		_, err := redis.Del(context.Background(), c.GetHeader("access_token")).Result()
+		_, err := database.TokenDB.Del(context.Background(), c.GetHeader("access_token")).Result()
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"code": 112,
@@ -147,9 +139,6 @@ func Logout() gin.HandlerFunc {
 
 func SendEmail() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		redis := database.ConnectTokenRedis()
-		db := database.ConnectDB()
-
 		req := new(dto.SendEmail)
 		err := c.Bind(req)
 		if err != nil {
@@ -161,7 +150,7 @@ func SendEmail() gin.HandlerFunc {
 
 		var u dao.User
 		var n int64
-		err = db.Find(&u, "email = ?", req.Email).Count(&n).Error
+		err = database.DB.Find(&u, "email = ?", req.Email).Count(&n).Error
 
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			panic(err)
@@ -187,7 +176,7 @@ func SendEmail() gin.HandlerFunc {
 			CreatedAt: time.Now(),
 		}
 
-		err = db.Clauses(clause.OnConflict{
+		err = database.DB.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(&u).Error
 		if err != nil {
@@ -198,7 +187,7 @@ func SendEmail() gin.HandlerFunc {
 		if err != nil {
 			panic(err)
 		}
-		redis.Set(context.Background(), req.Email, code, time.Minute*30)
+		database.TokenDB.Set(context.Background(), req.Email, code, time.Minute*30)
 
 		templateData := map[string]string{
 			"code": code,
@@ -222,8 +211,6 @@ func SendEmail() gin.HandlerFunc {
 
 func SignUp() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		db := database.ConnectDB()
-
 		req := new(dto.SignUp)
 		err := c.Bind(req)
 		if err != nil {
@@ -235,7 +222,7 @@ func SignUp() gin.HandlerFunc {
 
 		var user dao.User
 		var n int64
-		result := db.Where("email = ?", req.Email).First(&user).Count(&n)
+		result := database.DB.Where("email = ?", req.Email).First(&user).Count(&n)
 		if result.Error != nil || user.Status == "not authenticated" {
 			c.JSON(http.StatusForbidden, gin.H{
 				"code": 104,
@@ -255,7 +242,7 @@ func SignUp() gin.HandlerFunc {
 			panic(err)
 		}
 
-		db.Model(&user).Where("email = ?", req.Email).
+		database.DB.Model(&user).Where("email = ?", req.Email).
 			Updates(dao.User{Pwd: sql.NullString{
 				String: string(h),
 				Valid:  true,
@@ -268,7 +255,7 @@ func SignUp() gin.HandlerFunc {
 			log.Panic(err)
 		}
 
-		db.Create(&dao.Secret{
+		database.DB.Create(&dao.Secret{
 			Email:     req.Email,
 			SecretKey: t,
 		})

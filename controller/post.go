@@ -17,7 +17,6 @@ import (
 func CreatePost() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		req := new(dto.CreatePost)
-		db := database.ConnectDB()
 		err := c.Bind(req)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
@@ -67,7 +66,7 @@ func CreatePost() gin.HandlerFunc {
 			CreatedAt: t,
 			Tag:       nil,
 		}
-		db.Create(&p)
+		database.DB.Create(&p)
 
 		for _, tag := range req.Tags {
 			e, err := aes.Encrypt(tag.TagName)
@@ -78,7 +77,7 @@ func CreatePost() gin.HandlerFunc {
 				PostID:  req.ID,
 				TagName: e,
 			}
-			db.Create(&t)
+			database.DB.Create(&t)
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"code":    200,
@@ -89,13 +88,11 @@ func CreatePost() gin.HandlerFunc {
 
 func DeletePost() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		db := database.ConnectDB()
-
 		var post dao.Post
 
 		postID := c.Param("post_id")
 		email := c.GetHeader("email")
-		err := db.First(&post, "id = ?", postID).Error
+		err := database.DB.First(&post, "id = ?", postID).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			panic(err)
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -110,7 +107,7 @@ func DeletePost() gin.HandlerFunc {
 			return
 		}
 
-		err = db.Delete(&dao.Post{ID: postID}).Error
+		err = database.DB.Delete(&dao.Post{ID: postID}).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			panic(err)
 		}
@@ -123,7 +120,6 @@ func DeletePost() gin.HandlerFunc {
 
 func EditPost() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		db := database.ConnectDB()
 		req := new(dto.EditPost)
 		err := c.Bind(req)
 		if err != nil {
@@ -140,7 +136,7 @@ func EditPost() gin.HandlerFunc {
 		cipher := lib.CreateCipher(key)
 
 		var post dao.Post
-		err = db.First(&post, "id = ?", postID).Error
+		err = database.DB.First(&post, "id = ?", postID).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			panic(err)
 		} else if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -160,11 +156,11 @@ func EditPost() gin.HandlerFunc {
 			panic(err)
 		}
 
-		db.Model(&post).Where("id = ?", postID).Updates(&dao.Post{
+		database.DB.Model(&post).Where("id = ?", postID).Updates(&dao.Post{
 			Contents: e,
 		})
 
-		db.Where("post_id = ?", postID).Delete(&dao.Tag{})
+		database.DB.Where("post_id = ?", postID).Delete(&dao.Tag{})
 		for _, tag := range req.Tags {
 			e, err := cipher.Encrypt(tag.TagName)
 			if err != nil {
@@ -175,7 +171,7 @@ func EditPost() gin.HandlerFunc {
 				PostID:  postID,
 				TagName: e,
 			}
-			db.Create(&t)
+			database.DB.Create(&t)
 		}
 		c.JSON(http.StatusOK, gin.H{
 			"code": 200,
@@ -185,7 +181,6 @@ func EditPost() gin.HandlerFunc {
 
 func GetPostByDate() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		db := database.ConnectDB()
 		type response struct {
 			Code int       `json:"code,omitempty"`
 			Post *dto.Post `json:"post,omitempty"`
@@ -224,7 +219,7 @@ func GetPostByDate() gin.HandlerFunc {
 
 		date := fmt.Sprintf("%s-%s-%s", year, month, day)
 		var post dao.Post
-		err := db.Where("email = ? and date_format(created_at, '%Y %m %d') = "+
+		err := database.DB.Where("email = ? and date_format(created_at, '%Y %m %d') = "+
 			"date_format(?, '%Y %m %d')", email, date).First(&post).Error
 		if err != nil && !(errors.Is(err, gorm.ErrRecordNotFound)) {
 			panic(err)
@@ -237,7 +232,7 @@ func GetPostByDate() gin.HandlerFunc {
 			return
 		}
 
-		db.Find(&post.Tag, "post_id = ?", post.ID)
+		database.DB.Find(&post.Tag, "post_id = ?", post.ID)
 
 		res.Post.PostID = post.ID
 		res.Post.Date = post.CreatedAt.Format("2006-01-02")
@@ -262,8 +257,6 @@ func GetPostByDate() gin.HandlerFunc {
 
 func GetPostByID() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		db := database.ConnectDB()
-
 		type response struct {
 			Code int       `json:"code,omitempty"`
 			Post *dto.Post `json:"post,omitempty"`
@@ -280,7 +273,7 @@ func GetPostByID() gin.HandlerFunc {
 
 		var post dao.Post
 		var n int64
-		err := db.First(&post, "id = ?", id).Count(&n).Error
+		err := database.DB.First(&post, "id = ?", id).Count(&n).Error
 		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 			panic(err)
 		}
@@ -297,7 +290,7 @@ func GetPostByID() gin.HandlerFunc {
 			c.JSON(http.StatusForbidden, res)
 			return
 		}
-		db.Find(&post.Tag, "post_id = ?", id)
+		database.DB.Find(&post.Tag, "post_id = ?", id)
 
 		res.Post.PostID = post.ID
 		res.Post.Date = post.CreatedAt.Format("2006-01-02")
@@ -322,8 +315,6 @@ func GetPostByID() gin.HandlerFunc {
 
 func GetPostByMonth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		db := database.ConnectDB()
-
 		type response struct {
 			Code  int         `json:"code,omitempty"`
 			Posts *[]dto.Post `json:"posts,omitempty"`
@@ -348,7 +339,7 @@ func GetPostByMonth() gin.HandlerFunc {
 
 		date := fmt.Sprintf("%s-%s-1", year, month)
 		var posts []dao.Post
-		db.Select("post.*").Where("email = ? and date_format(created_at, '%Y %m') = "+
+		database.DB.Select("post.*").Where("email = ? and date_format(created_at, '%Y %m') = "+
 			"date_format(?, '%Y %m')", email, date).Find(&posts)
 
 		if len(posts) == 0 {
@@ -373,8 +364,6 @@ func GetPostByMonth() gin.HandlerFunc {
 
 func GetPost() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		db := database.ConnectDB()
-
 		type response struct {
 			Code  int         `json:"code,omitempty"`
 			Posts *[]dto.Post `json:"posts,omitempty"`
@@ -401,11 +390,11 @@ func GetPost() gin.HandlerFunc {
 				}
 			}
 
-			err = db.Raw("SELECT post.* FROM tag JOIN post ON post.id = tag.post_id WHERE post.email = ? and tag.tag_name in "+
+			err = database.DB.Raw("SELECT post.* FROM tag JOIN post ON post.id = tag.post_id WHERE post.email = ? and tag.tag_name in "+
 				"(?) GROUP BY tag.post_id having (count(tag.tag_name) = ?)",
 				email, req, len(req)).First(&posts).Order("post.created_at desc").Count(&n).Error
 		} else {
-			err = db.Raw("select * from post where email = ?", email).First(&posts).Count(&n).Error
+			err = database.DB.Raw("select * from post where email = ?", email).First(&posts).Count(&n).Error
 		}
 
 		if err != nil {
@@ -428,7 +417,7 @@ func GetPost() gin.HandlerFunc {
 				Tags:   new([]dto.Tag),
 			}
 
-			err = db.Find(&posts[i].Tag, "post_id = ?", p.ID).Error
+			err = database.DB.Find(&posts[i].Tag, "post_id = ?", p.ID).Error
 			if err != nil {
 				panic(err)
 			}
