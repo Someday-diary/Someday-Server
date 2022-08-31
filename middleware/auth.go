@@ -13,11 +13,9 @@ import (
 
 func Auth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		redis := database.ConnectTokenRedis()
-		db := database.ConnectDB()
 		t := c.GetHeader("access_token")
 
-		email, err := redis.Get(context.Background(), t).Result()
+		email, err := database.TokenDB.Get(context.Background(), t).Result()
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"code": 401,
@@ -27,7 +25,7 @@ func Auth() gin.HandlerFunc {
 		}
 
 		var secret dao.Secret
-		db.First(&secret, "email = ?", email)
+		database.DB.First(&secret, "email = ?", email)
 
 		c.Request.Header.Add("email", email)
 
